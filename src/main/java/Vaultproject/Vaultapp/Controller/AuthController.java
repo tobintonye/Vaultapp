@@ -27,13 +27,16 @@ import Vaultproject.Vaultapp.Services.RefreshTokenService;
 import Vaultproject.Vaultapp.Services.UserInfoService;
 import Vaultproject.Vaultapp.dto.AuthRequestDto;
 import Vaultproject.Vaultapp.dto.AuthResponse;
+import Vaultproject.Vaultapp.dto.MessageResponse;
 import Vaultproject.Vaultapp.dto.RefreshTokenDTO;
 import Vaultproject.Vaultapp.dto.RegisterDto;
-import lombok.RequiredArgsConstructor;
+import Vaultproject.Vaultapp.dto.ResetPasswordRequest;
+import Vaultproject.Vaultapp.dto.VerificationRequest;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/vaultauth-api-v1")
-@RequiredArgsConstructor
+
 public class AuthController {
     private final UserInfoService userService;
     private final JwtService jwtService;
@@ -41,6 +44,17 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserInfoRepository userInfoRepository;
+
+    public AuthController(UserInfoService userService, JwtService jwtService,
+        AuthenticationManager authenticationManager, RefreshTokenService refreshTokenService,
+        RefreshTokenRepository refreshTokenRepository, UserInfoRepository userInfoRepository) {
+        this.userService = userService;
+        this.jwtService = jwtService;
+        this.authenticationManager = authenticationManager;
+        this.refreshTokenService = refreshTokenService;
+        this.refreshTokenRepository = refreshTokenRepository;
+        this.userInfoRepository = userInfoRepository;
+    }
 
     @PostMapping("/register")
     public ResponseEntity <Map<String, String>> registerUser(@RequestBody RegisterDto registerDto) {
@@ -62,24 +76,33 @@ public class AuthController {
 
     @GetMapping("/verify-email")
     public ResponseEntity <Map<String, String>> verifyEmail(@RequestParam String token) {
-        String message = userService.verifyEmail(token);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", message);
-        
-        if (message.contains("successfully")) {
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-            }
-    }
+         userService.verifyEmail(token);    
+
+        return ResponseEntity.ok(
+            Map.of("message", "Email verified successfully")
+        );
+    };
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<Map<String, String>> resendVerification(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String message = userService.resendVerificationEmail(email);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", message);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<MessageResponse> resendVerification(@Valid @RequestBody VerificationRequest request) {
+       
+        String message = userService.resendVerificationEmail(request.getEmail());
+        return ResponseEntity.ok(new MessageResponse(message));
+    }
+    
+    // request password reset
+     @PostMapping("/forgot-password")
+     public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody VerificationRequest request) {
+        String message = userService.requestPasswordReset(request.getEmail());
+        return ResponseEntity.ok(new MessageResponse(message));
+     }
+
+    // reset password
+     @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    userService.resetPassword(request.getToken(), request.getNewPassword());
+        
+        return ResponseEntity.ok(new MessageResponse("Password reset successful"));
     }
     
     @PostMapping("/login")

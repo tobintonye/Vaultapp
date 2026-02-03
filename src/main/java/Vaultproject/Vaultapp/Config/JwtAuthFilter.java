@@ -1,6 +1,8 @@
 package Vaultproject.Vaultapp.Config;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,11 +24,27 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     private final JwtService jwtService;
 
+     public static final List<String> EXCLUDED_PATHS = Arrays.asList(
+        "/vaultauth-api-v1/login",
+        "/vaultauth-api-v1/register",
+        "/vaultauth-api-v1/verify-email",
+        "/vaultauth-api-v1/resend-verification",
+        "/vaultauth-api-v1/forgot-password",
+        "/vaultauth-api-v1/reset-password",
+        "/vaultauth-api-v1/refresh-token"
+    );
+
     public JwtAuthFilter(JwtService jwtService, UserDetailsService userDetailsService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
     }
 
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return EXCLUDED_PATHS.stream().anyMatch(path::startsWith);
+    }
+   
     @Override
       protected void doFilterInternal(HttpServletRequest request, 
         HttpServletResponse response, 

@@ -36,9 +36,11 @@ public class SecurityConfig {
                 .requestMatchers("/vault-api-v1/**").permitAll()
 
                 .requestMatchers("/vaultauth-api-v1/register", "/vaultauth-api-v1/verify-email",
-                    "/vaultauth-api-v1/resend-verification", "/vaultauth-api-v1/login", 
+                    "/vaultauth-api-v1/resend-verification", 
+                    "/vaultauth-api-v1/forgot-password", 
+                    "/vaultauth-api-v1/reset-password",    
+                    "/vaultauth-api-v1/login", 
                     "/vaultauth-api-v1/refresh-token", "/vaultauth-api-v1/logout").permitAll()
-
                     
                 .anyRequest().authenticated()
             )

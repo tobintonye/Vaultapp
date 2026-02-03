@@ -1,12 +1,11 @@
 package Vaultproject.Vaultapp.Model;
 
 
-import jakarta.persistence.FetchType;
-
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,11 +23,11 @@ public class VerificationToken {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String token;
+    private String tokenHash;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn( name = "user_id", nullable = false)
-    private User user;
+    private User user; //  not loaded until accessed
 
     @Column(nullable = false)
     private LocalDateTime expiryDate;
@@ -36,12 +35,12 @@ public class VerificationToken {
     @Column(nullable = false)
     private boolean used = false;
 
-    public VerificationToken(User user, String token, LocalDateTime expiryDate) {
+    public VerificationToken(User user, String tokenHash, LocalDateTime expiryDate) {
         this.user = user;
-        this.token = token;
-        this.expiryDate = LocalDateTime.now().plusHours(24); // Token valid for 24 hours
+        this.tokenHash = tokenHash;
+        this.expiryDate = expiryDate;
         this.used = false;
-    }
+}
 
     public VerificationToken() {}
 

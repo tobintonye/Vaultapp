@@ -1,5 +1,7 @@
 package Vaultproject.Vaultapp.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,9 +12,11 @@ import org.springframework.transaction.annotation.Transactional;
 import Vaultproject.Vaultapp.Model.VerificationToken;
 import Vaultproject.Vaultapp.Model.User;
 
+
 @Repository
 public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Long>{
-    Optional<VerificationToken> findByToken(String token);
+    List<VerificationToken> findAllByExpiryDateAfter(LocalDateTime date);
+    
     Optional<VerificationToken> findByUser(User user);
 
     @Modifying

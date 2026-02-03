@@ -9,7 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import Vaultproject.Vaultapp.Model.User;
 
-public class UserInfoDetails implements UserDetails,  CredentialsContainer {
+public class UserInfoDetails implements UserDetails, CredentialsContainer {
     private final User user;
     private final String username;
     private String password;

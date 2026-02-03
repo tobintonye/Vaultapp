@@ -79,7 +79,7 @@ public class EmailService {
             helper.setTo(toEmail);
             helper.setSubject("Password Reset Request - Vaultapp");
             
-            String passwordVerificationUrl = baseUrl + "/vault-api-v1/password-reset?token=" + URLEncoder.encode(resetToken, StandardCharsets.UTF_8);
+            String passwordVerificationUrl = baseUrl + "/vaultauth-api-v1/validate-reset-token?token=" + URLEncoder.encode(resetToken, StandardCharsets.UTF_8);
 
             String htmlContent = String.format("""
                 <html>

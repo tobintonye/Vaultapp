@@ -1,9 +1,5 @@
 package Vaultproject.Vaultapp.Services;
 
-import Vaultproject.Vaultapp.exception.InvalidVerificationTokenException;
-import Vaultproject.Vaultapp.exception.ExpiredVerificationTokenException;
-import Vaultproject.Vaultapp.exception.UsedVerificationTokenException;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,6 +21,9 @@ import Vaultproject.Vaultapp.Model.VerificationToken;
 import Vaultproject.Vaultapp.Repository.PasswordResetRepository;
 import Vaultproject.Vaultapp.Repository.UserInfoRepository;
 import Vaultproject.Vaultapp.Repository.VerificationTokenRepository;
+import Vaultproject.Vaultapp.exception.ExpiredVerificationTokenException;
+import Vaultproject.Vaultapp.exception.InvalidVerificationTokenException;
+import Vaultproject.Vaultapp.exception.UsedVerificationTokenException;
 
 @Service
 public class UserInfoService implements UserDetailsService {
@@ -239,5 +238,37 @@ public class UserInfoService implements UserDetailsService {
         return "Password reset successful";
     }
 
+    @Transactional     
+    public String resendPasswordToken(String email) {
+        Optional<User> userOpt = userInfoRepository.findByEmail(email);
         
+        String successMessage = "If an account with that email exists, a password reset link has been sent.";
+
+        if(userOpt.isEmpty()) {
+            return successMessage;
+        }
+
+        User user = userOpt.get();
+         
+        passwordResetRepository.findByUser(user).ifPresent(existingToken -> {
+            passwordResetRepository.delete(existingToken);
+        });
+        // Generate new token
+        String rawToken = UUID.randomUUID().toString();
+        String hashedToken = passwordEncoder.encode(rawToken);
+        Instant expiryDate = Instant.now().plusSeconds(15 * 60);
+        
+        PasswordResetToken passwordResetToken = new PasswordResetToken();
+
+        passwordResetToken.setTokenHash(hashedToken);
+        passwordResetToken.setExpiryDate(expiryDate);
+        passwordResetToken.setUser(user);
+        passwordResetToken.setUsed(false);
+        passwordResetRepository.save(passwordResetToken);
+        
+        // Send email
+        emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
+        
+        return successMessage;
+    }
 }

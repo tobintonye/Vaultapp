@@ -15,4 +15,6 @@ public class AuthRequestDto {
 
     @Column(nullable = false)
     private String password;
+
+    private String captchaToken;
 }

@@ -1,5 +1,6 @@
 package Vaultproject.Vaultapp.Model;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -41,4 +42,10 @@ public class User {
      private boolean enabled = false; // Account activation status
 
      private LocalDateTime verifiedAt;
+
+     @Column(nullable = false)
+     private int failedLoginAttempts = 0;
+
+     @Column
+     private Instant lockUntil;
 }

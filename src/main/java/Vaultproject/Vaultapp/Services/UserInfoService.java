@@ -67,7 +67,7 @@ public class UserInfoService implements UserDetailsService {
         if(userInfoRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
-
+        
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         // Set account as not enabled until email is verified
         user.setEnabled(false);
@@ -160,6 +160,30 @@ public class UserInfoService implements UserDetailsService {
             emailService.sendVerificationEmail(user.getEmail(), rawToken);
 
             return "A new verification email has been sent. Please check your inbox.";
+        }
+        
+        public void checkAccountNotLocked(User user) {
+            if(user.getLockUntil() != null && user.getLockUntil().isAfter(Instant.now())) {
+                throw new RuntimeException("Account locked. Try again later.");
+            }
+        } 
+
+        @Transactional
+        public void handleFailedLogin(User user) {
+            int attempts = user.getFailedLoginAttempts() + 1;
+            user.setFailedLoginAttempts(attempts);
+
+            if(attempts >= 5) {
+               user.setLockUntil(Instant.now().plusSeconds(15 * 60));
+            }
+            userInfoRepository.save(user);
+        }
+
+        @Transactional
+        public void handleSuccessfulLogin(User user) {
+            user.setFailedLoginAttempts(0);
+            user.setLockUntil(null);
+            userInfoRepository.save(user);
         }
         
     // request password reset email
@@ -270,5 +294,5 @@ public class UserInfoService implements UserDetailsService {
         emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
         
         return successMessage;
-    }
+    }    
 }

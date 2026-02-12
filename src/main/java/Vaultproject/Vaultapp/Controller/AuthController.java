@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import Vaultproject.Vaultapp.Model.AuthProvider;
 import Vaultproject.Vaultapp.Model.RefreshToken;
 import Vaultproject.Vaultapp.Model.User;
 import Vaultproject.Vaultapp.Repository.RefreshTokenRepository;
@@ -102,7 +103,8 @@ public class AuthController {
             user.setLastname(registerDto.getLastName());
             user.setEmail(registerDto.getEmail());
             user.setPassword(registerDto.getPassword());
-        
+            user.setProvider(AuthProvider.LOCAL);
+
             String message = userService.saveUser(user);
             Map<String, String> response = new HashMap<>();
             response.put("message", message);

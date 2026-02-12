@@ -22,29 +22,50 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+    private final CustomOAuth2UserService oauth2UserService;
+    private final OAuth2SuccessHandler successHandler;
+    private final OAuth2FailureHandler failureHandler;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsService userDetailsService) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsService userDetailsService, 
+        CustomOAuth2UserService oauth2UserService,
+        OAuth2SuccessHandler successHandler,
+        OAuth2FailureHandler failureHandler
+    ) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
+        this.oauth2UserService = oauth2UserService;
+        this.successHandler = successHandler;
+        this.failureHandler = failureHandler;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable()
+            .formLogin(form -> form.disable())
+            .httpBasic(basic -> basic.disable())
+        )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/vault-api-v1/**").permitAll()
+                .requestMatchers("/vault-api-v1/**", "/oauth2/**",
+                "/login/oauth2/**").permitAll()
 
                 .requestMatchers("/vaultauth-api-v1/register", "/vaultauth-api-v1/verify-email",
                     "/vaultauth-api-v1/resend-verification", 
                     "/vaultauth-api-v1/forgot-password", 
-                    "/vaultauth-api-v1/resend-forgotpassowrdtoken", 
+                    "/vaultauth-api-v1/resend-forgotpasswordtoken", 
                     "/vaultauth-api-v1/reset-password",    
                     "/vaultauth-api-v1/login", 
                     "/vaultauth-api-v1/refresh-token", "/vaultauth-api-v1/logout").permitAll()
                     
                 .anyRequest().authenticated()
             )
+            .oauth2Login(oauth -> oauth
+                .userInfoEndpoint(userInfo ->
+                    userInfo.userService(oauth2UserService))
+                .successHandler(successHandler)
+               // .failureHandler(failureHandler)
+            )
+
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )

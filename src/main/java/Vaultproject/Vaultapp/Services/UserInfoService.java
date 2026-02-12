@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import Vaultproject.Vaultapp.Config.UserInfoDetails;
+import Vaultproject.Vaultapp.Model.AuthProvider;
 import Vaultproject.Vaultapp.Model.PasswordResetToken;
 import Vaultproject.Vaultapp.Model.User;
 import Vaultproject.Vaultapp.Model.VerificationToken;
@@ -63,31 +64,54 @@ public class UserInfoService implements UserDetailsService {
 
     @Transactional
     public String saveUser(User user) {
-        // check if user already exists
+        if(user.getProvider() == AuthProvider.LOCAL) {
+            if(user.getPassword() ==  null || user.getPassword().isBlank()) {
+                throw new IllegalArgumentException("Password is required for email/password registration");
+            }
+
+            if(user.getPassword().length() < 8) {
+                throw new IllegalArgumentException("Password must be at least 8 characters");
+            }
+        }
+
+        // no password set here for Oauth users
+        if(user.getProvider() != AuthProvider.LOCAL) {
+            if (user.getPassword() != null) {
+                throw new IllegalArgumentException("OAuth2 users should not have passwords set manually");
+            }
+        }
+
         if(userInfoRepository.findByEmail(user.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered");
         }
         
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        if(user.getProvider() == AuthProvider.LOCAL) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }        
+        
         // Set account as not enabled until email is verified
         user.setEnabled(false);
         user.setEmailVerified(false);
         User newUser = userInfoRepository.save(user);
 
-        String rawToken =  UUID.randomUUID().toString();
-        String hashedToken = passwordEncoder.encode(rawToken);
+        if(user.getProvider() == AuthProvider.LOCAL) {
+            String rawToken;
+            rawToken = UUID.randomUUID().toString();
+            String hashedToken = passwordEncoder.encode(rawToken);
 
-        VerificationToken token = new VerificationToken();
-        token.setTokenHash(hashedToken);
-        token.setExpiryDate(LocalDateTime.now().plusHours(24));
-        token.setUser(newUser);
-        token.setUsed(false);
-        verificationTokenRepository.save(token);
+            VerificationToken token = new VerificationToken();
+            token.setTokenHash(hashedToken);
+            token.setExpiryDate(LocalDateTime.now().plusHours(24));
+            token.setUser(newUser);
+            token.setUsed(false);
+            verificationTokenRepository.save(token);
 
-        // Send verification email
-        emailService.sendVerificationEmail(newUser.getEmail(), rawToken);
-        
-        return "Registration successful! Please check your email to verify your account.";
+            // Send verification email
+            emailService.sendVerificationEmail(newUser.getEmail(), rawToken);
+        }
+            return "Registration successful! Please check your email to verify your account.";
+       
     }
 
         @Transactional
@@ -185,7 +209,7 @@ public class UserInfoService implements UserDetailsService {
             user.setLockUntil(null);
             userInfoRepository.save(user);
         }
-        
+
     // request password reset email
     @Transactional
     public String requestPasswordReset(String email) {
@@ -290,7 +314,6 @@ public class UserInfoService implements UserDetailsService {
         passwordResetToken.setUsed(false);
         passwordResetRepository.save(passwordResetToken);
         
-        // Send email
         emailService.sendPasswordResetEmail(user.getEmail(), rawToken);
         
         return successMessage;

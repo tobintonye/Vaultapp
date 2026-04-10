@@ -91,6 +91,6 @@ public class AuthControllerTest {
 
     // confirms the mock was actually called
     verify(authenticationManager).authenticate(any());
-}
+    }
 }
 
